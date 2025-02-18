@@ -138,6 +138,7 @@ class rational_quadratic_spline(interval_base.interval_base):
         
         ## subtract number of derivative parameters as we need
         self.total_param_num+=3*self.num_basis_functions+1-self.deriv_num_bd_subtraction
+        #print("debug rational quadratic spline ", self.total_param_num)
 
         ## minimum values to which relative logarithmic values are added with softmax
      

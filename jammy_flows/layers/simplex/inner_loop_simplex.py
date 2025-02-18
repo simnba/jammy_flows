@@ -16,7 +16,12 @@ class inner_loop_simplex(simplex_base.simplex_base):
                  dimension, 
                  use_permanent_parameters=False,
                  always_parametrize_in_embedding_space=0,
-                 project_from_gauss_to_simplex=0):
+                 project_from_gauss_to_simplex=0,
+                 num_basis_functions=10,
+                 num_inner_flow_layers=2,
+                 amortization_mlp_dims="128",
+                 verbose=True):
+        print("version: SIMON.2")
         """
         Iterative simplex flow. Symbol: "w"
 
@@ -30,17 +35,19 @@ class inner_loop_simplex(simplex_base.simplex_base):
 
         flow_dict=dict()
         flow_dict["r"] = dict()
-        
-        # hard coded 10 basis elements at the moment
-        flow_dict["r"]["num_basis_functions"]=10
+        flow_dict["r"]["num_basis_functions"]=num_basis_functions
       
+        
         self.inner_flow=default.pdf("+".join(["i1_0.0_1.0"]*self.dimension),
-                                  "+".join(["rr"]*self.dimension), 
+                                  "+".join(["r"*num_inner_flow_layers]*self.dimension), 
                                   options_overwrite=flow_dict,
                                   amortize_everything=True,
                                   amortization_mlp_use_custom_mode=True, 
-                                  use_as_passthrough_instead_of_pdf=True)
+                                  use_as_passthrough_instead_of_pdf=True,
+                                  amortization_mlp_dims=amortization_mlp_dims,
+                                  verbose=verbose)
      
+        #print("debug total_number_amortizable_params=", self.inner_flow.total_number_amortizable_params)
         self.total_num_inner_flow_params=self.inner_flow.total_number_amortizable_params
         self.total_param_num=self.total_num_inner_flow_params
 

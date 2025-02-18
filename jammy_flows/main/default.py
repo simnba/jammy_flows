@@ -41,7 +41,7 @@ class pdf(nn.Module):
         flow_defs, 
         options_overwrite=dict(),
         conditional_input_dim=None,
-        amortization_mlp_dims="128",
+        amortization_mlp_dims="128-64",
         predict_log_normalization=False,
         join_poisson_and_pdf_description=False,
         hidden_mlp_dims_poisson="128",
@@ -51,7 +51,8 @@ class pdf(nn.Module):
         amortization_mlp_highway_mode=0,
         amortize_everything=False,
         use_as_passthrough_instead_of_pdf=False,
-        skip_mlp_initialization=False
+        skip_mlp_initialization=False,
+        verbose=True
     ):  
         """
         The main class of the project that defines a pytorch normalizing-flow PDF.
@@ -92,7 +93,7 @@ class pdf(nn.Module):
 
         """
         super().__init__()
-
+        #print("simon amortization_mlp_use_custom_mode ", amortization_mlp_use_custom_mode)
         self.amortization_mlp_use_custom_mode=amortization_mlp_use_custom_mode
         self.predict_log_normalization=predict_log_normalization
         self.join_poisson_and_pdf_description=join_poisson_and_pdf_description
@@ -104,7 +105,7 @@ class pdf(nn.Module):
         
         self.use_as_passthrough_instead_of_pdf=use_as_passthrough_instead_of_pdf
         self.skip_mlp_initialization=skip_mlp_initialization
-
+        
         ## holds total number of params for amortization - only used if "amortize_everything" set to True
         self.total_number_amortizable_params=None
 
@@ -117,7 +118,8 @@ class pdf(nn.Module):
                                    options_overwrite, 
                                    conditional_input_dim, 
                                    amortization_mlp_dims, 
-                                   amortization_mlp_ranks)
+                                   amortization_mlp_ranks,
+                                   verbose)
        
         self.init_flow_structure()
         
@@ -148,7 +150,8 @@ class pdf(nn.Module):
                               options_overwrite,
                               conditional_input_dim,
                               amortization_mlp_dims,
-                              amortization_mlp_ranks):
+                              amortization_mlp_ranks,
+                              verbose):
         
         # list of the pdf defs (e.g. e2 for 2-d Euclidean) for each subpdf
         # i.e. e2+s2 will yield 2 entries, one for each manifold
@@ -208,7 +211,7 @@ class pdf(nn.Module):
 
                             for detail_opt in options_overwrite[k][detail_abbrv].keys():
 
-                                print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) options overwrite " % (ind, self.pdf_defs_list[ind], cur_flow_defs, cur_flow_index,flow_abbrv ), detail_opt, " with ", options_overwrite[k][detail_abbrv][detail_opt])
+                                if verbose: print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) options overwrite " % (ind, self.pdf_defs_list[ind], cur_flow_defs, cur_flow_index,flow_abbrv ), detail_opt, " with ", options_overwrite[k][detail_abbrv][detail_opt])
                                 overwrote_default=True
 
                                 check_flow_option(flow_abbrv, detail_opt, options_overwrite[k][detail_abbrv][detail_opt])
@@ -233,7 +236,7 @@ class pdf(nn.Module):
                                     
                                     for detail_opt in options_overwrite[k][detail_abbrv].keys():
 
-                                        print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) options overwrite " % (ind, self.pdf_defs_list[ind],cur_flow_defs, cur_flow_index,flow_abbrv ), detail_opt, " with ", options_overwrite[k][detail_abbrv][detail_opt])
+                                        if verbose: print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) options overwrite " % (ind, self.pdf_defs_list[ind],cur_flow_defs, cur_flow_index,flow_abbrv ), detail_opt, " with ", options_overwrite[k][detail_abbrv][detail_opt])
                                         overwrote_default=True
 
                                         check_flow_option(flow_abbrv, detail_opt, options_overwrite[k][detail_abbrv][detail_opt])
@@ -248,7 +251,7 @@ class pdf(nn.Module):
                         if(k==flow_abbrv):
 
                             for detail_opt in options_overwrite[k].keys():
-                                print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) options overwrite " % (ind, self.pdf_defs_list[ind], cur_flow_defs, cur_flow_index,flow_abbrv ), detail_opt, " with ", options_overwrite[k][detail_opt])
+                                if verbose: print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) options overwrite " % (ind, self.pdf_defs_list[ind], cur_flow_defs, cur_flow_index,flow_abbrv ), detail_opt, " with ", options_overwrite[k][detail_opt])
                                 overwrote_default=True
 
                                 check_flow_option(flow_abbrv, detail_opt, options_overwrite[k][detail_opt])
@@ -257,7 +260,7 @@ class pdf(nn.Module):
 
 
                 if(overwrote_default==False):
-                    print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) - using *default* options" % (ind, self.pdf_defs_list[ind], cur_flow_defs, cur_flow_index,flow_abbrv ))
+                    if verbose: print("sub-manifold (%d - %s - %s) and intra-manifold flow (%d - %s) - using *default* options" % (ind, self.pdf_defs_list[ind], cur_flow_defs, cur_flow_index,flow_abbrv ))
 
                 cur_flow_index+=1
 
@@ -442,7 +445,6 @@ class pdf(nn.Module):
                 )
 
                 # add parameters for the very first layer to total amortizable_params
-
                 self.num_parameter_list[subflow_index].append(self.layer_list[subflow_index][-1].get_total_param_num())
 
         ## add log-normalization prediction
@@ -578,7 +580,7 @@ class pdf(nn.Module):
                     if(self.amortize_everything):
                         ##
                         self.total_number_amortizable_params+=sum(self.num_parameter_list[0])
-                        
+                        #print("debug 1 ", self.total_number_amortizable_params)
                         if(self.predict_log_normalization and self.join_poisson_and_pdf_description==False):
                             self.total_number_amortizable_params+=1
 
@@ -630,7 +632,7 @@ class pdf(nn.Module):
                     
                     if(self.amortize_everything):
                         self.total_number_amortizable_params+=custom_mlp.num_amortization_params
-
+                        #print("debug 2 ", self.total_number_amortizable_params)
                     self.mlp_predictors.append(custom_mlp)
 
                 else:

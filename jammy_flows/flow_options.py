@@ -219,6 +219,10 @@ opts_dict["w"] = dict()
 opts_dict["w"]["module"] = inner_loop_simplex
 opts_dict["w"]["type"] = "a"
 opts_dict["w"]["kwargs"] = dict()
+opts_dict["w"]["kwargs"]["num_basis_functions"] = (10, lambda x: x>0)
+opts_dict["w"]["kwargs"]["num_inner_flow_layers"] = (2, lambda x: x>0)
+opts_dict["w"]["kwargs"]["verbose"] = (True, [True, False])
+opts_dict["w"]["kwargs"]["amortization_mlp_dims"] = ("128", lambda x: type(x)==str)
 
 """
 Spherical/Euclidean/Interval flows that do nothing
